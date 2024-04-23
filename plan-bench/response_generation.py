@@ -13,6 +13,7 @@ np.random.seed(42)
 import copy
 import time
 from tqdm import tqdm
+import torch
 class ResponseGenerator:
     def __init__(self, config_file, engine, verbose, ignore_existing):
         self.engine = engine
@@ -22,7 +23,7 @@ class ResponseGenerator:
         self.data = self.read_config(config_file)
         if self.engine == 'bloom':
             self.model = self.get_bloom()
-        elif self.engine == 'Llama-2-7b-chat-hf':
+        elif self.engine == 'llama2':
             self.model = self.get_llama2()
         elif 'finetuned' in self.engine:
             # print(self.engine)
@@ -45,10 +46,11 @@ class ResponseGenerator:
                                                      max_memory=max_memory_mapping)
         return {'model': model, 'tokenizer': tokenizer}
     def get_llama2(self):
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         hf_token = os.getenv('HF_TOKEN')
         # Load model directly
-        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=access_token).to("cuda")
-        model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=access_token).to("cuda")
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_token)
+        model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_token).to(device)
         return {'model': model, 'tokenizer': tokenizer}
     def get_responses(self, task_name, specified_instances = [], run_till_completion=False):
         output_dir = f"responses/{self.data['domain_name']}/{self.engine}/"
@@ -136,6 +138,7 @@ if __name__=="__main__":
                         \n curie = GPT-3 Curie \
                         \n babbage = GPT-3 Babbage \
                         \n ada = GPT-3 Ada \
+                        \n llama2 = Llama-2-7b-chat-hf \
                         ')
                         
     parser.add_argument('--verbose', type=str, default="False", help='Verbose')

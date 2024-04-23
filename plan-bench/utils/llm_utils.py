@@ -1,6 +1,7 @@
 from transformers import StoppingCriteriaList, StoppingCriteria
 import openai
 import os
+import torch
 openai.api_key = os.environ["OPENAI_API_KEY"]
 def generate_from_bloom(model, tokenizer, query, max_tokens):
     encoded_input = tokenizer(query, return_tensors='pt')
@@ -27,10 +28,11 @@ def send_query(query, engine, max_tokens, model=None, stop="[STATEMENT]"):
             return resp_string
         else:
             assert model is not None
-    elif engine == 'Llama-2-7b-chat-hf':
+    elif engine == 'llama2':
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         if model:
-            inputs = model['tokenizer'].encode(query, add_special_tokens=False, return_tensors="pt")
-            outputs = model['model'].generate(inputs, max_length=max_tokens)
+            inputs = model['tokenizer'].encode(query, add_special_tokens=False, return_tensors="pt").to(device)
+            outputs = model['model'].generate(inputs, max_new_tokens=max_tokens)
             response = model['tokenizer'].decode(outputs[0], skip_special_tokens=True)
             response = response.replace(query, '')
             resp_string = ""
