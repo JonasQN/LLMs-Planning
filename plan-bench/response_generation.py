@@ -45,7 +45,7 @@ class ResponseGenerator:
                                                      max_memory=max_memory_mapping)
         return {'model': model, 'tokenizer': tokenizer}
     def get_llama2(self):
-        access_token = "Enter your token here"
+        hf_token = os.getenv('HF_TOKEN')
         # Load model directly
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=access_token).to("cuda")
         model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=access_token).to("cuda")
