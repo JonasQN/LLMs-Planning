@@ -1,6 +1,5 @@
 import os
 import random
-
 import yaml
 from Executor import Executor
 from utils import *
@@ -23,6 +22,8 @@ class ResponseGenerator:
         self.data = self.read_config(config_file)
         if self.engine == 'bloom':
             self.model = self.get_bloom()
+        elif self.engine = 'Llama-2-7b-chat-hf':
+            self.model = self.get_llama2()
         elif 'finetuned' in self.engine:
             # print(self.engine)
             assert self.engine.split(':')[1] is not None
@@ -43,7 +44,12 @@ class ResponseGenerator:
                                                      local_files_only=False, load_in_8bit=True, device_map='auto',
                                                      max_memory=max_memory_mapping)
         return {'model': model, 'tokenizer': tokenizer}
-
+    def get_llama2(self):
+        access_token = "Enter your token here"
+        # Load model directly
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=access_token).to("cuda")
+        model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=access_token).to("cuda")
+        return {'model': model, 'tokenizer': tokenizer}
     def get_responses(self, task_name, specified_instances = [], run_till_completion=False):
         output_dir = f"responses/{self.data['domain_name']}/{self.engine}/"
         os.makedirs(output_dir, exist_ok=True)
