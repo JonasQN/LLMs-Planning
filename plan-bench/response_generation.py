@@ -22,7 +22,7 @@ class ResponseGenerator:
         self.data = self.read_config(config_file)
         if self.engine == 'bloom':
             self.model = self.get_bloom()
-        elif self.engine = 'Llama-2-7b-chat-hf':
+        elif self.engine == 'Llama-2-7b-chat-hf':
             self.model = self.get_llama2()
         elif 'finetuned' in self.engine:
             # print(self.engine)
