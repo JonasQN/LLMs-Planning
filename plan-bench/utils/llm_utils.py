@@ -27,7 +27,7 @@ def send_query(query, engine, max_tokens, model=None, stop="[STATEMENT]"):
             return resp_string
         else:
             assert model is not None
-    elif engine = 'Llama-2-7b-chat-hf':
+    elif engine == 'Llama-2-7b-chat-hf':
         if model:
             inputs = model['tokenizer'].encode(query, add_special_tokens=False, return_tensors="pt")
             outputs = model['model'].generate(inputs, max_length=max_tokens)
