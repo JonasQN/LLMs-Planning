@@ -44,6 +44,19 @@ def send_query(query, engine, max_tokens, model=None, stop="[STATEMENT]"):
             return resp_string
         else:
             assert model is not None
+    elif engine == 'vllm_llama2':
+        if model:
+            response = llm.generate(prompts, sampling_params)
+            response = response.replace(query, '')
+            resp_string = ""
+            for line in response.split('\n'):
+                if '[PLAN END]' in line:
+                    break
+                else:
+                    resp_string += f'{line}\n'
+            return resp_string
+        else:
+            assert model is not None
     elif engine == 'finetuned':
         if model:
             try:

@@ -14,6 +14,8 @@ import copy
 import time
 from tqdm import tqdm
 import torch
+from vllm import LLM, SamplingParams
+
 class ResponseGenerator:
     def __init__(self, config_file, engine, verbose, ignore_existing):
         self.engine = engine
@@ -25,6 +27,8 @@ class ResponseGenerator:
             self.model = self.get_bloom()
         elif self.engine == 'llama2':
             self.model = self.get_llama2()
+        elif self.engine == 'vllm_llama2':
+            self.model = self.get_vllm_llama2()
         elif 'finetuned' in self.engine:
             # print(self.engine)
             assert self.engine.split(':')[1] is not None
@@ -48,10 +52,13 @@ class ResponseGenerator:
     def get_llama2(self):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         hf_token = os.getenv('HF_TOKEN')
-        # Load model directly
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_token)
         model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_token).to(device)
         return {'model': model, 'tokenizer': tokenizer}
+    def get_vllm_llama2(self):
+        llm = LLM(model="meta-llama/Llama-2-7b-chat-hf")
+        return {'model': llm, 'tokenizer': None}
+        
     def get_responses(self, task_name, specified_instances = [], run_till_completion=False):
         output_dir = f"responses/{self.data['domain_name']}/{self.engine}/"
         os.makedirs(output_dir, exist_ok=True)
