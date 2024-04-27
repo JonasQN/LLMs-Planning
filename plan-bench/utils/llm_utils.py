@@ -2,6 +2,7 @@ from transformers import StoppingCriteriaList, StoppingCriteria
 import openai
 import os
 import torch
+from vllm import LLM, SamplingParams
 openai.api_key = os.environ["OPENAI_API_KEY"]
 def generate_from_bloom(model, tokenizer, query, max_tokens):
     encoded_input = tokenizer(query, return_tensors='pt')
@@ -46,7 +47,8 @@ def send_query(query, engine, max_tokens, model=None, stop="[STATEMENT]"):
             assert model is not None
     elif engine == 'vllm_llama2':
         if model:
-            response = model.generate(prompts, sampling_params)
+            sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
+            response = model.generate(query, sampling_params)
             response = response.replace(query, '')
             resp_string = ""
             for line in response.split('\n'):
