@@ -47,8 +47,8 @@ def send_query(query, engine, max_tokens, model=None, stop="[STATEMENT]"):
             assert model is not None
     elif engine == 'vllm_llama2':
         if model:
-            sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
-            response = model.generate(query, sampling_params)
+            sampling_params = SamplingParams(n=1, temperature=0.8, top_p=0.95)
+            response = model['model'].generate(query, sampling_params)[0][0].text
             response = response.replace(query, '')
             resp_string = ""
             for line in response.split('\n'):
