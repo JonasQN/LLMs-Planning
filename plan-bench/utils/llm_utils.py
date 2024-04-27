@@ -46,7 +46,7 @@ def send_query(query, engine, max_tokens, model=None, stop="[STATEMENT]"):
             assert model is not None
     elif engine == 'vllm_llama2':
         if model:
-            response = llm.generate(prompts, sampling_params)
+            response = model.generate(prompts, sampling_params)
             response = response.replace(query, '')
             resp_string = ""
             for line in response.split('\n'):
