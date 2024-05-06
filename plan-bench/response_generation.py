@@ -27,8 +27,8 @@ class ResponseGenerator:
             self.model = self.get_bloom()
         elif self.engine == 'llama2':
             self.model = self.get_llama2()
-        elif self.engine == 'vllm_llama2':
-            self.model = self.get_vllm_llama2()
+        elif 'vllm' in self.engine:
+            self.model = self.get_vllm()
         elif 'finetuned' in self.engine:
             # print(self.engine)
             assert self.engine.split(':')[1] is not None
@@ -55,10 +55,14 @@ class ResponseGenerator:
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_token)
         model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_token).to(device)
         return {'model': model, 'tokenizer': tokenizer}
-    def get_vllm_llama2(self):
-        llm = LLM(model="meta-llama/Llama-2-7b-chat-hf")
+    def get_vllm(self):
+        if self.engine == 'vllm_llama2':
+            llm = LLM(model="meta-llama/Llama-2-7b-chat-hf")
+        elif self.engine == 'vllm_llama3':
+            llm = LLM(model="meta-llama/Meta-Llama-3-8B-Instruct")
+        elif self.engine == 'vllm_mixtral_8x7b_instruct':
+            llm = LLM(model="mistralai/Mixtral-8x7B-Instruct-v0.1")
         return {'model': llm, 'tokenizer': None}
-        
     def get_responses(self, task_name, specified_instances = [], run_till_completion=False):
         output_dir = f"responses/{self.data['domain_name']}/{self.engine}/"
         os.makedirs(output_dir, exist_ok=True)
