@@ -62,6 +62,10 @@ class ResponseGenerator:
             llm = LLM(model="meta-llama/Meta-Llama-3-8B-Instruct")
         elif self.engine == 'vllm_mixtral_8x7b_instruct':
             llm = LLM(model="mistralai/Mixtral-8x7B-Instruct-v0.1")
+        elif self.engine == 'vllm_vicuna_7b':
+            llm = LLM(model="lmsys/vicuna-7b-v1.5")
+        elif self.engine == 'vllm_mistral_7b':
+            llm = LLM(model="mistralai/Mistral-7B-Instruct-v0.2")
         return {'model': llm, 'tokenizer': None}
     def get_responses(self, task_name, specified_instances = [], run_till_completion=False):
         output_dir = f"responses/{self.data['domain_name']}/{self.engine}/"
