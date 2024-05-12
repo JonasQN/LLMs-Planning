@@ -72,15 +72,16 @@ class ResponseGenerator:
         os.makedirs(output_dir, exist_ok=True)
         output_json = output_dir+f"{task_name}.json"
         while True:
-            if os.path.exists(output_json):
-                with open(output_json, 'r') as file:
-                    structured_output = json.load(file)
-            else:
-                prompt_dir = f"prompts/{self.data['domain_name']}/"
-                assert os.path.exists(prompt_dir+f"{task_name}.json")
-                with open(prompt_dir+f"{task_name}.json", 'r') as file:
-                    structured_output = json.load(file)
-                structured_output['engine'] = self.engine        
+            # Commented out since it affects the evaluation
+            # if os.path.exists(output_json):
+            #     with open(output_json, 'r') as file:
+            #         structured_output = json.load(file)
+            # else:
+            prompt_dir = f"prompts/{self.data['domain_name']}/"
+            assert os.path.exists(prompt_dir+f"{task_name}.json")
+            with open(prompt_dir+f"{task_name}.json", 'r') as file:
+                structured_output = json.load(file)
+            structured_output['engine'] = self.engine        
         
             failed_instances = []
             for instance in tqdm(structured_output["instances"]):
