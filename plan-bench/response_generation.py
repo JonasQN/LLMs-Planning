@@ -15,7 +15,7 @@ import time
 from tqdm import tqdm
 import torch
 from vllm import LLM, SamplingParams
-
+from blocksworld_verifier.simple_verifier import BlocksWorldVerifier
 class ResponseGenerator:
     def __init__(self, config_file, engine, verbose, ignore_existing):
         self.engine = engine
@@ -23,6 +23,10 @@ class ResponseGenerator:
         self.ignore_existing = ignore_existing
         self.max_gpt_response_length = 500
         self.data = self.read_config(config_file)
+        self.domain_pddl = f'./instances/{self.data["domain_file"]}'
+        self.llm_plan_file = 'llm_plan'
+        self.instance_dir = self.data['instance_dir']
+        self.instance = f'./instances/{self.instance_dir}/{self.data["instances_template"]}'
         if self.engine == 'bloom':
             self.model = self.get_bloom()
         elif self.engine == 'llama2':
@@ -41,6 +45,13 @@ class ResponseGenerator:
     def read_config(self, config_file):
         with open(config_file, 'r') as file:
             return yaml.safe_load(file)
+    def get_executor(self, instance, domain, ground=False):
+        plan_executor = Executor(domain, instance, ground=ground)
+        return plan_executor
+    def get_problem(self, instance, domain):
+        reader = PDDLReader(raise_on_error=True)
+        reader.parse_domain(domain)
+        return reader.parse_instance(instance)
     def get_bloom(self):
         max_memory_mapping = {0: "0GB", 1: "43GB", 2: "43GB", 3: "43GB", 4: "43GB", 5: "43GB"}
         cache_dir = os.getenv('BLOOM_CACHE_DIR', '/data/karthik/LLM_models/bloom/')
@@ -56,7 +67,7 @@ class ResponseGenerator:
         model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=hf_token).to(device)
         return {'model': model, 'tokenizer': tokenizer}
     def get_vllm(self):
-        if self.engine == 'vllm_llama2':
+        if self.engine == 'vllm_llama2' or self.engine == 'vllm_llama2_verifier':
             llm = LLM(model="meta-llama/Llama-2-7b-chat-hf")
         elif self.engine == 'vllm_llama3':
             llm = LLM(model="meta-llama/Meta-Llama-3-8B-Instruct")
@@ -105,6 +116,24 @@ class ResponseGenerator:
                 if 'caesar' in self.data['domain_name']:
                     stop_statement = caesar_encode(stop_statement)
                 llm_response = send_query(query, self.engine, self.max_gpt_response_length, model=self.model, stop=stop_statement)
+                if self.engine == 'vllm_llama2_verifier':
+                    # extract the llm output into plan
+                    cur_instance = self.instance.format(instance["instance_id"])
+                    problem = self.get_problem(cur_instance, self.domain_pddl)
+                    llm_plan, _ = text_to_plan(llm_response, problem.actions, self.llm_plan_file, self.data)
+                    plan_executor = self.get_executor(cur_instance, self.domain_pddl)
+                    # print(f'llm_plan:{llm_plan}, type{type(llm_plan)}')
+                    # print(f'init_state:{plan_executor.init_state}, type{type(plan_executor.init_state)}')
+                    # print(f'truth_plan:{plan_executor.plan}')
+                    # print(f'goal_state:{plan_executor.goal_state}')
+                    verifier = BlocksWorldVerifier(plan_executor.init_state)
+                    valid, message = verifier.verify_plan(llm_plan)
+                    # print(f'message: {message}')
+                    if not valid:
+                        verifier_msg = f'A verifier returned a message: {message}. My updated plan is as follows:\n\n[PLAN]'
+                        query += llm_response + ' ' + verifier_msg
+                        # print(f'query:{query}')
+                        llm_response = send_query(query, self.engine, self.max_gpt_response_length, model=self.model, stop=stop_statement)
                 if not llm_response:
                     failed_instances.append(instance['instance_id'])
                     print(f"Failed instance: {instance['instance_id']}")
